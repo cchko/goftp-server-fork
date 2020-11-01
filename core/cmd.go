@@ -20,6 +20,11 @@ type Command interface {
 	Execute(*Conn, string)
 }
 
+type FtpError interface {
+	Error()  string
+	Status() int
+}
+
 type commandMap map[string]Command
 
 var (
@@ -1152,7 +1157,12 @@ func (cmd commandStor) Execute(conn *Conn, param string) {
 		msg := fmt.Sprintf("OK, received %d bytes", size)
 		conn.writeMessage(226, msg)
 	} else {
-		conn.writeMessage(450, fmt.Sprint("error during transfer: ", err))
+		status := 450
+		if ftpErr, ok := err.(FtpError); ok {
+			status = ftpErr.Status()
+		}
+
+		conn.writeMessage(status, fmt.Sprint("error during transfer: ", err))
 	}
 }
 
